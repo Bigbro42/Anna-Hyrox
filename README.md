@@ -55,3 +55,11 @@ Keine Diagnose, Therapieanweisung oder automatische Belastungsfreigabe. Schmerzh
 Der Backup-Import validiert jetzt Termine, Übungen, Status, Wochen und Stationsaufteilungen. Unmittelbar vor einem Import wird eine lokale Sicherung unter `anna-hyrox2-preimport-v1` angelegt.
 
 **Live-Test:** Hier wurde die App in einer isolierten Browserumgebung geprüft. Die öffentlich gehostete GitHub-Pages-Adresse und die echte iOS-/Android-Installation müssen zusätzlich auf dem Gerät verifiziert werden.
+
+## Satzerfassung wie in FORM. (Update)
+
+In jeder Kalendereinheit unter „Sätze & Wiederholungen“ ist für jede Übung eine eigene Tabelle verfügbar. Du kannst pro Satz **kg** und **Wdh.** eingeben, oder über „Messgröße“ auf **Meter, Sekunden oder Minuten** wechseln. Satz für Satz abhaken sowie Sätze hinzufügen oder entfernen. Gewicht und Wiederholungen werden nach jeder gültigen Eingabe auf dem Gerät gespeichert; Dezimalgewichte unterstützen auch das Komma.
+
+Die Sollvorgaben aus Excel bleiben weiterhin sichtbar. Ältere Freitext-Ist-Werte findest du unter „Weitere Angaben und Notizen“. Sie werden nicht überschrieben. JSON-Backups von älteren Versionen ohne Satztabellen werden weiterhin unterstützt; die Tabellen entstehen beim ersten Öffnen automatisch. CSV enthält jetzt eine Zeile pro Satz.
+
+Das Bedienkonzept der Satztabelle orientiert sich an FORM.; es werden keine persönlichen FORM.-Daten übernommen oder verändert.
