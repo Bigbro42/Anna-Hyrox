@@ -43,3 +43,15 @@ Die `plan.json` wurde direkt aus den Blättern Übersicht, Kraft-Progression, Pa
 ## Kein Medizinprodukt
 
 Keine Diagnose, Therapieanweisung oder automatische Belastungsfreigabe. Schmerzhafte Übungen und relevante Beschwerden sollten individuell abgeklärt werden. Die vollständige Rennbelastung ist kein Versprechen, sondern ein aus der Datei übernommener Zielplan.
+
+## Verifikation / Testbereitschaft
+
+- `node --check app.js` prüft die JavaScript-Syntax.
+- `node tests/validate-plan.mjs` prüft die Planstruktur (13 Wochen, 52 + 3 Termine).
+- `node tests/validate-static.mjs` prüft die PWA-Dateien, Verweise und JSON-Schemas.
+- `python tests/smoke_ui.py` prüft in Chromium Start, Navigation, Bearbeitung, Trainingsabschluss, Speichern, Export und Terminverschiebung. Erfordert Python-Paket `playwright` und installierten Chromium-Browser.
+- GitHub Actions führt diese Tests beim Push automatisch aus (Status unter „Actions“).
+
+Der Backup-Import validiert jetzt Termine, Übungen, Status, Wochen und Stationsaufteilungen. Unmittelbar vor einem Import wird eine lokale Sicherung unter `anna-hyrox2-preimport-v1` angelegt.
+
+**Live-Test:** Hier wurde die App in einer isolierten Browserumgebung geprüft. Die öffentlich gehostete GitHub-Pages-Adresse und die echte iOS-/Android-Installation müssen zusätzlich auf dem Gerät verifiziert werden.
