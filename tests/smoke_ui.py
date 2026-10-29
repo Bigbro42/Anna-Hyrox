@@ -33,11 +33,32 @@ with sync_playwright() as p:
  assert page.locator('.exercise').count()>=7
  title_before=page.locator('input[data-field="title"]').input_value()
  page.locator('input[data-field="title"]').fill('Kraft Test angepasst');page.locator('input[data-field="title"]').press('Tab')
- page.locator('input[data-exercise="0|actual"]').fill('15 Min.');page.locator('input[data-exercise="0|actual"]').press('Tab')
+ # FORM-style set table: each working set has separate weight, reps and completion.
+ assert page.locator('input[data-set-input="1|0|kg"]').is_visible()
+ page.locator('button[data-set-check="1|0"]').click()
+ assert page.locator('button[data-set-check="1|0"]').get_attribute('aria-pressed')=='false'
+ assert page.locator('input[data-set-input="1|0|value"]').is_visible()
+ page.locator('input[data-set-input="1|0|kg"]').fill('80,5')
+ page.locator('input[data-set-input="1|0|kg"]').press('Tab')
+ page.locator('input[data-set-input="1|0|value"]').fill('8')
+ page.locator('button[data-set-check="1|0"]').click()
+ assert page.locator('button[data-set-check="1|0"]').get_attribute('aria-pressed')=='true'
+ page.locator('button[data-add-set="1"]').click()
+ assert page.locator('input[data-set-input="1|3|value"]').count()==1
+ page.locator('button[data-remove-set="1"]').click()
+ assert page.locator('input[data-set-input="1|3|value"]').count()==0
+ # Old 'Ist' text entry is still available but tucked into a details section.
+ page.locator('.exercise-more').first.locator('summary').click()
+ page.locator('input[data-exercise="0|actual"]').fill('15 Min.')
+ page.locator('input[data-exercise="0|actual"]').press('Tab')
  page.locator('input[data-exercise-done="0"]').check()
  page.locator('button[data-status="done"]').click()
  saved=page.evaluate('window.__local')
- assert next(x for x in json.loads(saved['anna-hyrox2-local-backup-v1'])['sessions'] if x['id']=='w01-B')['title']=='Kraft Test angepasst'
+ logged=next(x for x in json.loads(saved['anna-hyrox2-local-backup-v1'])['sessions'] if x['id']=='w01-B')
+ assert logged['title']=='Kraft Test angepasst'
+ assert logged['exercises'][1]['sets'][0]['kg']=='80.5'
+ assert logged['exercises'][1]['sets'][0]['value']=='8'
+ assert logged['exercises'][1]['sets'][0]['done'] is True
  print('PASS edit, completion, local backup')
  # start a fresh page: mock storage survives via the saved snapshot
  page.close()
@@ -60,6 +81,8 @@ with sync_playwright() as p:
  with page.expect_download() as dc:page.locator('button[data-csv]').click()
  data=dc.value.path().read_text()
  assert 'Kraft Test angepasst' in data
+ assert '80.5' in data
+ assert 'Wdh.' in data
  print('PASS JSON and CSV export')
  page.locator('#planStart').fill('2026-10-26')
  page.locator('#raceDate').fill('2027-01-26')
@@ -70,19 +93,35 @@ with sync_playwright() as p:
  assert next(x for x in state['sessions'] if x['id']=='w01-B')['date']=='2026-10-28'
  assert next(x for x in state['sessions'] if x['id']=='race-2')['date']=='2027-01-26'
  print('PASS moving overall plan and race date')
- # reject damaged backups while preserving local training data
+ # invalid backup must be rejected without changing local state
  page.locator('input#importFile').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':b'{"app":"anna-hyrox2","data":{"sessions":[]}}'})
  page.wait_for_timeout(150)
  state_after_invalid=json.loads(page.evaluate('window.__local')["anna-hyrox2-local-backup-v1"])
  assert state_after_invalid['raceDate']=='2027-01-26'
- # restore a good JSON backup and retain a pre-import snapshot
+ # a valid exported backup can be restored with a safety snapshot
  page.locator('input#importFile').set_input_files({'name':'valid.json','mimeType':'application/json','buffer':json.dumps(backup).encode('utf-8')})
  page.wait_for_timeout(180)
  restored=json.loads(page.evaluate('window.__local')["anna-hyrox2-local-backup-v1"])
  assert restored['raceDate']=='2027-01-19'
  assert next(x for x in restored['sessions'] if x['id']=='w01-B')['title']=='Kraft Test angepasst'
  assert 'anna-hyrox2-preimport-v1' in page.evaluate('window.__local')
+ # A legacy backup without structured sets must still import and gain editable rows.
+ legacy=json.loads(json.dumps(backup))
+ for session in legacy['data']['sessions']:
+  for ex in session['exercises']:
+   ex.pop('sets',None);ex.pop('metric',None)
+ page.locator('button[data-route="settings"]').first.click()
+ page.locator('input#importFile').set_input_files({'name':'older-backup.json','mimeType':'application/json','buffer':json.dumps(legacy).encode('utf-8')})
+ page.wait_for_timeout(180)
+ assert json.loads(page.evaluate('window.__local')["anna-hyrox2-local-backup-v1"])['sessions']
+ page.locator('button[data-route="training"]').last.click()
+ page.locator('button[data-week="1"]').click()
+ page.locator('button[data-open="w01-B"]').click()
+ assert page.locator('input[data-set-input="1|2|value"]').count()==1
+ assert page.locator('input[data-exercise="0|actual"]').input_value()=='15 Min.'
+ page.locator('button[data-route="settings"]').first.click()
  print('PASS invalid import guard, valid import, preimport snapshot')
+
  page.locator('button[data-route="calendar"]').last.click()
  assert page.locator('.day').count()>=28
  page.locator('button[data-route="training"]').last.click()
