@@ -70,6 +70,19 @@ with sync_playwright() as p:
  assert next(x for x in state['sessions'] if x['id']=='w01-B')['date']=='2026-10-28'
  assert next(x for x in state['sessions'] if x['id']=='race-2')['date']=='2027-01-26'
  print('PASS moving overall plan and race date')
+ # reject damaged backups while preserving local training data
+ page.locator('input#importFile').set_input_files({'name':'invalid.json','mimeType':'application/json','buffer':b'{"app":"anna-hyrox2","data":{"sessions":[]}}'})
+ page.wait_for_timeout(150)
+ state_after_invalid=json.loads(page.evaluate('window.__local')["anna-hyrox2-local-backup-v1"])
+ assert state_after_invalid['raceDate']=='2027-01-26'
+ # restore a good JSON backup and retain a pre-import snapshot
+ page.locator('input#importFile').set_input_files({'name':'valid.json','mimeType':'application/json','buffer':json.dumps(backup).encode('utf-8')})
+ page.wait_for_timeout(180)
+ restored=json.loads(page.evaluate('window.__local')["anna-hyrox2-local-backup-v1"])
+ assert restored['raceDate']=='2027-01-19'
+ assert next(x for x in restored['sessions'] if x['id']=='w01-B')['title']=='Kraft Test angepasst'
+ assert 'anna-hyrox2-preimport-v1' in page.evaluate('window.__local')
+ print('PASS invalid import guard, valid import, preimport snapshot')
  page.locator('button[data-route="calendar"]').last.click()
  assert page.locator('.day').count()>=28
  page.locator('button[data-route="training"]').last.click()
